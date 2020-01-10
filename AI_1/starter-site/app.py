@@ -9,8 +9,11 @@ import os
 import base64
 import json
 
-from flask import Flask, render_template, request
+from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+from azure.cognitiveservices.vision.computervision.models import ComputerVisionErrorException  # NOQA
 from dotenv import load_dotenv
+from flask import Flask, render_template, request
+from msrest.authentication import CognitiveServicesCredentials
 import requests
 
 from image import Image
@@ -24,6 +27,8 @@ COGSVCS_KEY = os.environ["COGSVCS_KEY"]
 COGSVCS_REGION = 'northcentralus'
 
 # Create vision_client
+vision_credentials = CognitiveServicesCredentials(COGSVCS_KEY)  # NOQA
+vision_client = ComputerVisionClient(COGSVCS_CLIENTURL, vision_credentials)  # NOQA
 
 # Create face_client
 
@@ -61,9 +66,8 @@ def translate():
                                target_language=target_language)
 
     # Create a placeholder for messages
-    messages = []
-
-    # TODO: Add code to retrieve text from picture
+    messages = extract_text_from_image(image.blob, vision_client)
+    app.logger.warning(f"Extracted text: {messages}")
 
     # TODO: Add code to translate text
 
@@ -132,3 +136,27 @@ def get_image():
     if request.files:
         return Image(request.files["file"])
     return Image()
+
+
+def extract_text_from_image(image, client):
+    """
+    Function that extracts text from images
+    """
+
+    try:
+        result = client.recognize_printed_text_in_stream(image=image)
+
+        app.logger.warning(len(result.regions))
+        lines = []
+        if len(result.regions) == 0:
+            lines.append("Photo contains no text to translate")
+
+        else:
+            for line in result.regions[0].lines:
+                text = " ".join([word.text for word in line.words])
+                lines.append(text)
+
+        return lines
+
+    except ComputerVisionErrorException as e:
+        return ["Computer Vision API error: " + e.message]
