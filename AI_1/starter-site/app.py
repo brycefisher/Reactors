@@ -19,6 +19,9 @@ from image import Image
 load_dotenv()
 
 # Load keys
+COGSVCS_CLIENTURL = os.environ["COGSVCS_CLIENTURL"]
+COGSVCS_KEY = os.environ["COGSVCS_KEY"]
+COGSVCS_REGION = 'northcentralus'
 
 # Create vision_client
 
