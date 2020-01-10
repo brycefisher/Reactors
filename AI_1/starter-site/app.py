@@ -1,8 +1,21 @@
-import os, base64, json, requests
+"""
+Microsoft Reactor Flask + Cognitive Services Demo
+
+See repo:
+https://github.com/microsoft/Reactors/blob/master/AI_1/
+"""
+
+import os
+import base64
+import json
+
 from flask import Flask, render_template, request
+from dotenv import load_dotenv
+import requests
+
+from image import Image
 
 # Load system variables with dotenv
-from dotenv import load_dotenv
 load_dotenv()
 
 # Load keys
@@ -12,16 +25,26 @@ load_dotenv()
 # Create face_client
 
 # Create the application
-app = Flask(__name__)
+app = Flask(__name__)  # NOQA
+
 
 @app.route("/", methods=["GET"])
 def index():
+    """
+    Homepage controller
+    """
+
     return render_template("index.html")
+
 
 @app.route("/translate", methods=["GET", "POST"])
 def translate():
+    """
+    Takes an image in for OCR and returns a translation
+    If a GET request, returns the html form
+    """
     # Load image or placeholder
-    image = get_image(request)
+    image = get_image()
 
     # Set the default for language translation
     target_language = "en"
@@ -30,7 +53,9 @@ def translate():
 
     # If it"s a GET, just return the form
     if request.method == "GET":
-        return render_template("translate.html", image_uri=image.uri, target_language=target_language)
+        return render_template("translate.html",
+                               image_uri=image.uri,
+                               target_language=target_language)
 
     # Create a placeholder for messages
     messages = []
@@ -39,12 +64,18 @@ def translate():
 
     # TODO: Add code to translate text
 
-    return render_template("translate.html", image_uri=image.uri, target_language=target_language, messages=messages)
+    return render_template("translate.html", image_uri=image.uri,
+                           target_language=target_language, messages=messages)
+
 
 @app.route("/train", methods=["GET", "POST"])
 def train():
+    """
+    Adds new faces to train the model more
+    """
+
     # Load image or placeholder
-    image = get_image(request)
+    image = get_image()
 
     # If it"s a GET, just return the form
     if request.method == "GET":
@@ -60,16 +91,20 @@ def train():
 
     # TODO: Add code to create or update person
 
-
     if not messages:
         messages.append("I don't recognize anyone")
 
-    return render_template("train.html", messages=messages, image_uri=image.uri)
+    return render_template("train.html", messages=messages, image_uri=image.uri)  # NOQA
+
 
 @app.route("/detect", methods=["GET", "POST"])
 def detect():
+    """
+    Use model as currently trained to detect faces
+    """
+
     # Load image or placeholder
-    image = get_image(request)
+    image = get_image()
 
     # If it"s a GET, just return the form
     if request.method == "GET":
@@ -80,12 +115,17 @@ def detect():
 
     # TODO: Add code to detect people in picture
 
-    return render_template("detect.html", messages=messages, image_uri=image.uri)
+    return render_template("detect.html", messages=messages, image_uri=image.uri)  # NOQA
 
-def get_image(request):
-    # Helper class 
-    from image import Image
+
+def get_image():
+    """
+    Helper function to extract an Image from the current request
+
+    See Image class for details on this works.
+    """
+
+    # Helper class
     if request.files:
         return Image(request.files["file"])
-    else:
-        return Image()
+    return Image()
